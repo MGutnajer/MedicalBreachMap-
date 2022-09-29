@@ -1,0 +1,233 @@
+<html>
+<head>
+  <title> Medical Breach Map </title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="./css/leaflet.css"/>
+  <link rel="stylesheet" href="./css/slider.css"/>
+
+  <style>
+           html { height:100%;}
+    body {
+        height:100%;
+        padding: 0;
+        margin: 0;
+    }
+
+    #map{ position: center;
+          height: 100%;
+          width: 100%;
+          
+          box-shadow: 2px 2px 2px 2px #072F5F;
+
+            }
+
+    #slider {
+      margin-top: 20px;
+    }
+    #overlay {
+      position:  absolute;
+      z-index: 1000;
+      background: rgba(56, 149, 211, 0.6);
+      padding: 10px;
+      right: 20;
+      margin: 10px;
+      border-radius: 20px;
+      box-shadow: 1px 1px 1px grey;
+      min-height: 100px;
+      width: 200px;
+    }
+
+    
+
+    h2 {
+      display: inline-block;
+      color: #FFFFFF ;
+    }
+  
+  </style>
+
+
+
+
+
+</head>
+<body>
+
+
+
+
+  </div>
+
+  <div id="overlay">
+    <h2>  The Largest Medical Data Breaches </h2>
+    
+    <div id="slider"></div>
+    <svg width="200" height="100">
+    <circle cx="20" cy="40" r="4" stroke="black" stroke-width="2" fill="#3895D3"  /> 
+        <text x="40" y="45" font-weight="bold" fill="white"> Under 500,000</text>
+    <circle cx="20" cy="60" r="6" stroke="black" stroke-width="2" fill="#1261A0"  /> 
+        <text x="40" y="65" font-weight="bold" fill="white">1 Million - 500,000</text>
+    <circle cx="20" cy="80" r="8" stroke="black" stroke-width="2" fill="#072F5F"  /> 
+        <text x="40" y="85" font-weight="bold" fill="white"> Over 1 Million</text>
+  </div>  
+ 
+  
+<div id="map">
+
+  
+
+
+  <script src="./js/leaflet.js"></script>
+  <script src="./js/leaflet.ajax.min.js"></script>
+  <script src="./js/slider.js"></script>
+  <script src="./js/wNumb.js"></script>
+  <script>
+
+  // initialize the map
+  var map = L.map('map');
+
+  // load a tile layer
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
+    attribution: '...',
+    maxZoom: 10,
+
+}).addTo(map);
+
+
+  // load breach Geojson
+   top500 = new L.GeoJSON.AJAX("webmap.geojson", {
+    style: function(feature) {
+          return {
+                color: "#072F5F",
+                opacity: 0.0
+          };
+        },
+    
+    pointToLayer: function(feature, latlng) {
+      if (feature.properties.Individual >= 1000000 ) {
+        return new L.circleMarker(latlng, {
+        radius: 12,
+        fillColor: "#072F5F",
+        color: "#072F5F",
+        opacity: 0.75,
+        fillOpacity: 0.75,
+        });
+
+       } else if (feature.properties.Individual >= 500000) {
+      return new L.circleMarker(latlng, {
+        radius: 9,
+        fillColor: "#1261A0",
+        color: "#1261A0",
+        opacity: 0.75,
+        fillOpacity: 0.75,
+      });
+
+      }
+      else if (feature.properties.Individual >= 1) { //in this event each value different than 0 is to be visible on the map
+      return new L.circleMarker(latlng, {
+        radius: 5,
+        fillColor: "#3895D3",
+        color: "#3895D3",
+        opacity: 0.75,
+        fillOpacity: 0.75,
+      });
+        }        
+    },
+    onEachFeature : onEachFeatureFunc
+});
+map.addLayer(top500);
+
+  //top500.addTo(map);
+
+function onEachFeatureFunc(feature, layer){
+            layer.on({
+                mouseover: highlightFeature,
+                mouseout: resetHighlight
+                
+            });
+            layer.bindPopup("<b>Individuals Affected By Leak: </b>"+ feature.properties.Individual
+              + "<br><b>Organization:  </b>" + feature.properties.Name_of_Co
+              + "<br><b>Year:  </b>" + feature.properties.Breach_Sub);
+
+
+        }
+ 
+    function highlightFeature(e){
+            var layer = e.target;
+
+            layer.setStyle({
+                weight: 5,
+                color: '#ffff99',
+                dashArray: '',
+                fillOpacity: 1.0,
+                fillColor: '#f34018',
+
+            });
+            // for different web browsers
+            if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge && !L.Browser.chrome) {
+                layer.bringToFront();
+            }
+        }
+        
+        
+        
+         function resetHighlight(e) {
+            top500.resetStyle(e.target);
+         }
+       
+         
+
+
+
+
+
+  //UI Slider
+  var slider = document.getElementById('slider');
+
+  noUiSlider.create(slider, {
+    start: [2010, 2010],
+    tooltips: true,
+    connect: true,
+    range: {
+        'min': 2010,
+        'max': 2021
+    },
+    format: wNumb ({
+      decimals: 0
+       
+    
+    })
+
+
+    
+
+}).on('slide',function(e) {
+      console.log(e)
+    
+    top500.eachLayer(function(layer) {
+      if(layer.feature.properties.Breach_Sub>=parseFloat(e[0])&&layer.feature.properties.Breach_Sub<=parseFloat(e[1])) {
+        layer.addTo(map);
+
+      } else {
+        map.removeLayer(layer);
+      }
+    });
+
+    }); 
+    
+
+
+
+  //max bounds 
+  var maxBounds = L.latLngBounds(
+  L.latLng(0.90325, -178.53408),
+  L.latLng(66.03724, -19.233040)
+);
+
+map.setMaxBounds(maxBounds);
+map.fitBounds(maxBounds);
+map.setView([42.0473, -99.6752], 4.2);
+  </script>
+</body>
+</html>
